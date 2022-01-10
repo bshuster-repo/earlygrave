@@ -101,3 +101,14 @@ func SortExtractor(defaultSort Sort) ConfigFilter {
 	})
 	return ExtractParam(extract)
 }
+
+func ChoiceValidator(name string, choices map[string]bool) ConfigFilter {
+	validate := Validate(func(r *http.Request) error {
+		values := r.URL.Query()
+		if _, ok := choices[values.Get(name)]; !ok {
+			return fmt.Errorf("%s is an invalid option for %s", values.Get(name), name)
+		}
+		return nil
+	})
+	return ValidateParam(validate)
+}

@@ -1,6 +1,7 @@
 package earlygrave
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -220,5 +221,39 @@ func TestExtractParamFailure(t *testing.T) {
 	_, err = funct(rr)
 	if err == nil {
 		t.Errorf("Expected to have error but got none")
+	}
+}
+
+func TestChoiceValidator(t *testing.T) {
+	funct := New(ChoiceValidator("currency", map[string]bool{"USD": true, "NIS": true}))
+	tcs := []struct {
+		name        string
+		expectedErr error
+		url         string
+	}{
+		{
+			name:        "invalid choice",
+			expectedErr: errors.New("BLA is an invalid option for currency"),
+			url:         "/?currency=BLA",
+		},
+	}
+
+	for _, tc := range tcs {
+		rr, err := http.NewRequest(http.MethodGet, tc.url, nil)
+		if err != nil {
+			t.Errorf("%s: creating a new request failed: %s", tc.name, err)
+		}
+		_, err = funct(rr)
+		if tc.expectedErr != nil && err != nil {
+			if err.Error() != tc.expectedErr.Error() {
+				t.Errorf("%s: expected error to be %s but got %s", tc.name, tc.expectedErr, err)
+			}
+		}
+		if err == nil && tc.expectedErr != nil {
+			t.Errorf("%s: expected to have error but got none", tc.name)
+		}
+		if err != nil && tc.expectedErr == nil {
+			t.Errorf("%s: expected to have no errors but got: %s", tc.name, err)
+		}
 	}
 }
